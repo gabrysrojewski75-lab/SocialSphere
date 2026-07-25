@@ -1,0 +1,113 @@
+{
+  "users": [
+    {
+      "email": "owner@socialsphere.local",
+      "password": "SS_Admin#Gabrys2026!",
+      "name": "Gabrys Rojewski",
+      "handle": "@Itzz_Sigma03",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "bio": "Właściciel i twórca platformy SocialSphere.",
+      "verified": true,
+      "isOwner": true,
+      "f2aEnabled": false,
+      "riddles": [],
+      "following": [],
+      "followers": [],
+      "lastIp": "127.0.0.1"
+    },
+    {
+      "email": "admin@socialsphere.com",
+      "password": "admin123",
+      "name": "Administrator",
+      "handle": "@admin",
+      "avatar": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
+      "bio": "Oficjalne konto administratora platformy SocialSphere.",
+      "verified": true,
+      "f2aEnabled": false,
+      "riddles": [],
+      "following": [],
+      "followers": []
+    },
+    {
+      "email": "walekonia123@gmail.com",
+      "password": "Multikonto444",
+      "name": "Test Konta",
+      "handle": "@Test_Konta",
+      "avatar": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAR1JREFUeF7tmjEOgkAURHdbr2GtDYVngdjb2noCKxIOYeAgVrZaew1bvcHfYjII2Ue7WYXhz5v/N+RT03xTxVdGACoAC8CAihmYgCApsPAUOHZd6NDbOEoOXrwFEIAKwAIwIFIACJICYgze+946C6glWopBqQlIKWUEoAKwAAxQQeLMaSBYmAXUl0cKuGNQfUPu/fYKcD+A+vsIgAXMnaBaou79WAALYIF4GNq2bWjDzXkfrr8OF8nGu8c13P8ZnuH6e5rC9SIDEIAKwAIwIFIACJICxCB9QKQAjRCdIK0ws4CiAMMQ0+Cfx2GlfNewt3gesIaHUO4RATgU5VDU+4WI4s859sIAGAADYID1K7E5QKb8BxAEgkAQCFYNwR80xmZQ1EseUAAAAABJRU5ErkJggg==",
+      "bio": "Witaj w mojej przestrzeni na SocialSphere! Jestem tu nowym użytkownikiem.",
+      "f2aEnabled": false,
+      "riddles": [],
+      "lastIp": "127.0.0.1",
+      "lastDevice": "Windows PC (Desktop)",
+      "following": [],
+      "followers": []
+    }
+  ],
+  "posts": [
+    {
+      "id": "post-official-1",
+      "author": {
+        "name": "Wsparcie SocialSphere",
+        "avatar": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
+        "handle": "@social_support"
+      },
+      "time": "Wczoraj",
+      "content": "Witaj w oficjalnej społeczności SocialSphere! 🚀 Opublikuj swój pierwszy post, zakręć własną Orbitą i korzystaj z czarno-pomarańczowej platformy bez fikcyjnych botów.",
+      "image": null,
+      "likes": 18,
+      "likedByUser": false,
+      "comments": []
+    }
+  ],
+  "chats": [
+    {
+      "id": "social-support",
+      "name": "Wsparcie SocialSphere",
+      "avatar": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80",
+      "type": "channel",
+      "official": true,
+      "unreadCount": 0,
+      "status": null,
+      "messages": [
+        {
+          "id": "m1",
+          "sender": "other",
+          "text": "Witaj w oficjalnym kanale wsparcia SocialSphere! Zapytaj o dowolną funkcjonalność lub zgłoś problem.",
+          "time": "12:00"
+        },
+        {
+          "id": "m2",
+          "sender": "other",
+          "text": "SocialSphere działa całkowicie bez botów — prawdziwa społeczność i czyste dane!",
+          "time": "12:05"
+        }
+      ]
+    },
+    {
+      "id": "global-announcements",
+      "name": "Ogłoszenia SocialSphere",
+      "avatar": "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?auto=format&fit=crop&w=150&q=80",
+      "type": "channel",
+      "official": true,
+      "unreadCount": 0,
+      "status": null,
+      "messages": [
+        {
+          "id": "m4",
+          "sender": "other",
+          "text": "Wypuściliśmy wersję SocialSphere z realną weryfikacją kont (gwiazdka ★)! 🎉",
+          "time": "Wczoraj"
+        }
+      ]
+    }
+  ],
+  "notifications": [
+    {
+      "id": "n1",
+      "type": "mention",
+      "text": "Witaj w SocialSphere! Twój profil jest aktywny i zweryfikowany.",
+      "time": "Przed chwilą",
+      "read": false
+    }
+  ]
+}

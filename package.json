@@ -1,0 +1,64 @@
+{
+  "name": "socialsphere",
+  "version": "1.0.0",
+  "description": "SocialSphere — czarno-pomarańczowa platforma społecznościowa by Itzz_Sigma03",
+  "main": "electron-main.js",
+  "author": "Gabrys Rojewski (Itzz_Sigma03)",
+  "license": "ISC",
+  "scripts": {
+    "start": "node server.js",
+    "electron": "electron .",
+    "build-exe": "electron-builder --win --x64",
+    "build-all": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.itzzsigma03.socialsphere",
+    "productName": "SocialSphere",
+    "directories": {
+      "output": "dist-exe"
+    },
+    "files": [
+      "electron-main.js",
+      "index.html",
+      "app.js",
+      "style.css",
+      "weryfikacja.html",
+      "assets/**/*",
+      "!node_modules/.cache",
+      "!dist-exe"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SocialSphere"
+    },
+    "portable": {
+      "artifactName": "SocialSphere-Portable.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^32.3.3",
+    "electron-builder": "^25.1.8"
+  }
+}

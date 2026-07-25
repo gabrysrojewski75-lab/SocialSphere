@@ -1,0 +1,207 @@
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+const PORT = process.env.PORT || 3000;
+const DB_FILE = path.join(__dirname, 'db.json');
+
+// MIME Types mapping
+const MIME_TYPES = {
+    '.html': 'text/html; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon'
+};
+
+// Initial Seed Database if db.json does not exist
+const INITIAL_DB = {
+    users: [
+        {
+            email: 'owner@socialsphere.local',
+            password: 'SS_Admin#Gabrys2026!',
+            name: 'Gabrys Rojewski',
+            handle: '@Itzz_Sigma03',
+            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+            bio: 'Właściciel i twórca platformy SocialSphere.',
+            verified: true,
+            isOwner: true,
+            f2aEnabled: false,
+            riddles: [],
+            followers: [],
+            following: []
+        }
+    ],
+    posts: [
+        {
+            id: 'post-official-1',
+            author: {
+                name: 'Wsparcie SocialSphere',
+                avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
+                handle: '@social_support'
+            },
+            time: 'Wczoraj',
+            content: 'Witaj w oficjalnej społeczności SocialSphere! 🚀 Opublikuj swój pierwszy post, zakręć własną Orbitą i korzystaj z czarno-pomarańczowej platformy z obsługą wielu urządzeń w sieci.',
+            image: null,
+            likes: 18,
+            likedByUser: false,
+            comments: []
+        }
+    ],
+    chats: [],
+    notifications: []
+};
+
+// Helper: Get local network IP addresses
+function getLocalNetworkIp() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return '127.0.0.1';
+}
+
+// Ensure db.json exists
+function ensureDbExists() {
+    if (!fs.existsSync(DB_FILE)) {
+        fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DB, null, 2), 'utf-8');
+    }
+}
+
+// Create HTTP Server
+const server = http.createServer((req, res) => {
+    ensureDbExists();
+
+    // Clean client IP
+    let clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    if (clientIp.startsWith('::ffff:')) {
+        clientIp = clientIp.replace('::ffff:', '');
+    }
+    if (clientIp === '::1') clientIp = '127.0.0.1';
+
+    // CORS Headers for network sharing
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+
+    const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+    const pathname = parsedUrl.pathname;
+
+    // --- API ENDPOINTS ---
+    if (pathname === '/api/info' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            status: 'online',
+            localIp: getLocalNetworkIp(),
+            port: PORT,
+            clientIp: clientIp
+        }));
+        return;
+    }
+
+    if (pathname === '/api/db' && req.method === 'GET') {
+        fs.readFile(DB_FILE, 'utf-8', (err, data) => {
+            if (err) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Błąd odczytu bazy' }));
+                return;
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(data);
+        });
+        return;
+    }
+
+    if (pathname === '/api/db' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            try {
+                const parsed = JSON.parse(body);
+                fs.writeFile(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8', err => {
+                    if (err) {
+                        res.writeHead(500, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ error: 'Błąd zapisu' }));
+                        return;
+                    }
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ status: 'ok', clientIp }));
+                });
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Nieprawidłowy JSON' }));
+            }
+        });
+        return;
+    }
+
+    // --- STATIC FILES SERVING ---
+    let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
+    
+    // Safety check to prevent directory traversal
+    if (!filePath.startsWith(__dirname)) {
+        res.writeHead(403);
+        res.end('Access Denied');
+        return;
+    }
+
+    fs.stat(filePath, (err, stats) => {
+        if (err || !stats.isFile()) {
+            res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end('<h1>404 — Nie znaleziono pliku</h1>');
+            return;
+        }
+
+        const ext = path.extname(filePath).toLowerCase();
+        const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+        res.writeHead(200, { 'Content-Type': contentType });
+        fs.createReadStream(filePath).pipe(res);
+    });
+});
+
+function startServer(portToUse) {
+    server.removeAllListeners('error');
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`\n⚠️ Port ${portToUse} jest już w użyciu przez inny działający serwer SocialSphere!`);
+            console.log(`Przełączam automatycznie na kolejny wolny port ${portToUse + 1}...\n`);
+            startServer(portToUse + 1);
+        } else {
+            console.error('Błąd serwera:', err);
+        }
+    });
+
+    server.listen(portToUse, '0.0.0.0', () => {
+        const localIp = getLocalNetworkIp();
+        console.clear();
+        console.log('================================================================');
+        console.log('🚀 SOCIALSPHERE - CENTRALNY SERWER SIECIOWY');
+        console.log('================================================================');
+        console.log(`💻 Na tym komputerze:  http://localhost:${portToUse}`);
+        console.log(`🌐 Z innych laptopów:  http://${localIp}:${portToUse}`);
+        console.log('================================================================');
+        console.log('Osoby na innych laptopach / telefonach połączone z tą samą siecią Wi-Fi');
+        console.log(`wpisują w przeglądarce:  http://${localIp}:${portToUse}`);
+        console.log('================================================================\n');
+    });
+}
+
+startServer(PORT);
+

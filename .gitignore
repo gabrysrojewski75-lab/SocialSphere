@@ -1,0 +1,8 @@
+node_modules/
+dist-exe/
+dist-apk/
+cordova-app/
+icons/
+*.keystore
+*.log
+.DS_Store

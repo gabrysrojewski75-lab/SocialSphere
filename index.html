@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialSphere — Połącz się ze światem</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <!-- 1. FULL AUTHENTICATION OVERLAY (Log in / Sign up / 2FA Verify) -->
+    <div class="login-overlay" id="login-overlay-screen">
+        <div class="login-card">
+            
+            <!-- STEP A: LOGIN FORM -->
+            <div id="login-step-login" class="login-step-form">
+                <div class="login-logo">
+                    <div class="logo-icon">
+                        <i data-lucide="globe"></i>
+                    </div>
+                    <h1 class="logo-text">Social<span>Sphere</span></h1>
+                </div>
+                <h2 class="login-title">Zaloguj się do <span>SocialSphere</span></h2>
+                <p class="login-subtitle">Wprowadź swoje dane uwierzytelniające</p>
+                
+                <!-- Success/Error Message display -->
+                <div class="auth-msg-prompt error" id="login-error-msg">Błędny login lub hasło</div>
+                <div class="auth-msg-prompt success" id="login-success-msg">Konto zostało pomyślnie utworzone!</div>
+
+                <div class="form-group">
+                    <label class="form-label" for="login-email">Adres E-mail</label>
+                    <input type="email" id="login-email" class="form-input" placeholder="np. kamil@socialsphere.com">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="login-password">Hasło</label>
+                    <input type="password" id="login-password" class="form-input" placeholder="Wpisz hasło">
+                </div>
+                
+                <button class="post-submit-btn" onclick="handleLoginSubmit()" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">
+                    <span>Zaloguj się</span>
+                    <i data-lucide="log-in"></i>
+                </button>
+                
+                <p style="font-size: 13px; color: var(--text-gray); margin-top: 16px;">
+                    Nie masz jeszcze konta? 
+                    <a href="#" onclick="showRegisterForm(event)" style="color: var(--orange-primary); text-decoration: none; font-weight: 600;">Stwórz konto</a>
+                </p>
+                
+                <div class="login-divider">
+                    <span>lub zaloguj przez</span>
+                </div>
+                
+                <div class="social-auth-grid">
+                    <button class="social-login-btn google" onclick="handleSSOLogin('Google')">
+                        <i data-lucide="chrome"></i>
+                        <span>Google</span>
+                    </button>
+                    <button class="social-login-btn discord" onclick="handleSSOLogin('Discord')">
+                        <i data-lucide="message-square"></i>
+                        <span>Discord</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- STEP B: REGISTRATION FORM -->
+            <div id="login-step-register" class="login-step-form" style="display: none; max-height: 80vh; overflow-y: auto; padding-right: 4px;">
+                <h2 class="login-title" style="margin-bottom: 4px;">Utwórz <span>Konto</span></h2>
+                <p class="login-subtitle">Zarejestruj się w SocialSphere</p>
+                
+                <div class="auth-msg-prompt error" id="register-error-msg">Ten adres e-mail jest już zajęty</div>
+
+                <!-- Custom Avatar upload selector -->
+                <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                    <div class="avatar-upload-box" onclick="triggerAvatarUpload()">
+                        <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleAvatarSelected(event)">
+                        <img src="" alt="Avatar Preview" class="avatar-upload-preview" id="avatar-preview-element">
+                        <div class="avatar-upload-placeholder" id="avatar-upload-placeholder-content">
+                            <i data-lucide="camera"></i>
+                            <span>Miniatura</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="register-email">Adres E-mail *</label>
+                    <input type="email" id="register-email" class="form-input" placeholder="np. kamil@socialsphere.com">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="register-password">Hasło *</label>
+                    <input type="password" id="register-password" class="form-input" placeholder="Min. 6 znaków">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="register-fullname">Imię i nazwisko</label>
+                    <input type="text" id="register-fullname" class="form-input" placeholder="Jan Kowalski">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="register-nickname">Unikalny nick (bez spacji) *</label>
+                    <input type="text" id="register-nickname" class="form-input" placeholder="jankowalski">
+                </div>
+                
+                <!-- 2FA option checkbox during registration -->
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                    <input type="checkbox" id="register-2fa-toggle" onchange="toggleRegister2FAFields(this)" style="width: 16px; height: 16px; accent-color: var(--orange-primary);">
+                    <label class="form-label" for="register-2fa-toggle" style="margin-bottom: 0; cursor: pointer; color: var(--text-white);">Włącz zabezpieczenie 2FA (Zagadki)</label>
+                </div>
+                
+                <!-- Expandable 2FA fields -->
+                <div class="collapsible-2fa-section" id="register-2fa-fields-box">
+                    <div class="collapsible-2fa-title">
+                        <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+                        <span>Zagadki zabezpieczające (2FA)</span>
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-gray); margin-bottom: 12px; line-height: 1.3;">Zdefiniuj dwa pytania i odpowiedzi, o które zostaniesz zapytany podczas logowania.</p>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="register-q1">Pytanie 1</label>
+                        <input type="text" id="register-q1" class="form-input" placeholder="np. Mój pierwszy pies?">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="register-a1">Odpowiedź 1</label>
+                        <input type="text" id="register-a1" class="form-input" placeholder="Wpisz odpowiedź">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="register-q2">Pytanie 2</label>
+                        <input type="text" id="register-q2" class="form-input" placeholder="np. Mój ulubiony kolor?">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="register-a2">Odpowiedź 2</label>
+                        <input type="text" id="register-a2" class="form-input" placeholder="Wpisz odpowiedź">
+                    </div>
+                </div>
+
+                <button class="post-submit-btn" onclick="handleRegisterSubmit()" style="width: 100%; justify-content: center; padding: 12px; margin-top: 14px;">
+                    <span>Zarejestruj się</span>
+                    <i data-lucide="user-plus"></i>
+                </button>
+                
+                <p style="font-size: 13px; color: var(--text-gray); margin-top: 16px;">
+                    Masz już konto? 
+                    <a href="#" onclick="showLoginForm(event)" style="color: var(--orange-primary); text-decoration: none; font-weight: 600;">Zaloguj się</a>
+                </p>
+            </div>
+            
+            <!-- STEP C: 2FA VERIFICATION CHALLENGE -->
+            <div id="login-step-2fa-verify" class="login-step-form" style="display: none;">
+                <div class="login-logo" style="margin-bottom: 8px;">
+                    <div class="logo-icon" style="background: linear-gradient(135deg, #ff9900, #ff5500);">
+                        <i data-lucide="shield-alert"></i>
+                    </div>
+                </div>
+                <h2 class="login-title">Weryfikacja <span>2FA</span></h2>
+                <p class="login-subtitle">Twoje konto jest chronione. Rozwiąż zagadki.</p>
+                
+                <div class="auth-msg-prompt error" id="verify-2fa-error-msg">Błędna odpowiedź na zagadkę!</div>
+                
+                <div class="form-group">
+                    <label class="form-label" style="color: var(--orange-primary);" id="verify-q1-label">Zagadka 1: Mój pierwszy pies?</label>
+                    <input type="text" id="verify-a1-input" class="form-input" placeholder="Twoja odpowiedź">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" style="color: var(--orange-primary);" id="verify-q2-label">Zagadka 2: Mój ulubiony kolor?</label>
+                    <input type="text" id="verify-a2-input" class="form-input" placeholder="Twoja odpowiedź">
+                </div>
+                
+                <button class="post-submit-btn" onclick="handle2FAVerifySubmit()" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">
+                    <span>Potwierdź tożsamość</span>
+                    <i data-lucide="shield-check"></i>
+                </button>
+                
+                <button class="social-login-btn" onclick="cancel2FAVerification()" style="margin-top: 14px; width: 100%; font-size: 13px;">
+                    <span>Powrót do logowania</span>
+                </button>
+            </div>
+            
+        </div>
+        <!-- Login screen copyright -->
+        <div onclick="openRulesModal()" style="text-align:center; margin-top: 20px; font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.3px; font-family: 'Outfit', sans-serif; cursor:pointer;" title="Kliknij, aby zobaczyć Regulamin i Zasady">
+            &copy; 2026 <strong style="color:rgba(255,102,0,0.7);">SocialSphere</strong> by <span style="color:rgba(255,102,0,0.7);">Itzz_Sigma03</span> &mdash; All rights reserved
+            <br><span style="font-size:10px;color:var(--orange-primary);text-decoration:underline;">Zobacz Zasady i Regulamin 📜</span>
+        </div>
+    </div>
+
+
+    <!-- 2. MAIN APPLICATION CONTAINER -->
+    <div class="app-container">
+        
+        <!-- Left Sidebar Navigation -->
+        <aside class="sidebar" id="app-sidebar">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <i data-lucide="globe"></i>
+                </div>
+                <h1 class="logo-text">Social<span>Sphere</span></h1>
+            </div>
+            
+            <ul class="nav-links">
+                <li class="nav-item active" id="nav-feed-btn" onclick="switchTab('feed')">
+                    <a class="nav-link">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span>Feed / Aktualności</span>
+                    </a>
+                </li>
+                <li class="nav-item" id="nav-orbits-btn" onclick="switchTab('orbits')">
+                    <a class="nav-link">
+                        <i data-lucide="aperture"></i>
+                        <span>Orbity</span>
+                    </a>
+                </li>
+                <li class="nav-item" id="nav-chat-btn" onclick="switchTab('chat')">
+                    <a class="nav-link">
+                        <i data-lucide="message-square"></i>
+                        <span>Czaty / Wiadomości</span>
+                    </a>
+                </li>
+                <li class="nav-item" id="nav-profile-btn" onclick="switchTab('profile')">
+                    <a class="nav-link">
+                        <i data-lucide="user"></i>
+                        <span>Twój Profil</span>
+                    </a>
+                </li>
+                <li class="nav-item" id="nav-settings-btn" onclick="switchTab('settings')">
+                    <a class="nav-link">
+                        <i data-lucide="settings"></i>
+                        <span>Ustawienia</span>
+                    </a>
+                </li>
+                <li class="nav-item" id="nav-admin-btn" onclick="switchTab('admin')" style="display: none;">
+                    <a class="nav-link" style="color: var(--orange-primary);">
+                        <i data-lucide="shield-check"></i>
+                        <span>Panel Właściciela</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Sidebar bottom: User summary + More popover -->
+            <div class="sidebar-bottom-section">
+                <!-- MORE Popover Button -->
+                <div class="more-popover-wrapper" id="more-popover-wrapper">
+                    <button class="sidebar-more-btn" id="sidebar-more-btn" onclick="toggleMorePopover()">
+                        <i data-lucide="menu"></i>
+                        <span>Więcej</span>
+                    </button>
+                    <!-- Popover Menu -->
+                    <div class="more-popover-menu" id="more-popover-menu">
+                        <div class="more-popover-item" onclick="switchTab('settings'); toggleMorePopover();">
+                            <i data-lucide="settings"></i>
+                            <span>Ustawienia konta</span>
+                        </div>
+                        <div class="more-popover-item" onclick="showSavedPostsQuick(); toggleMorePopover();">
+                            <i data-lucide="bookmark"></i>
+                            <span>Zapisane posty</span>
+                        </div>
+                        <div class="more-popover-item" onclick="toggleTheme(); toggleMorePopover();">
+                            <i data-lucide="moon"></i>
+                            <span>Zmień wygląd</span>
+                        </div>
+                        <div class="more-popover-divider"></div>
+                        <div class="more-popover-item danger" onclick="logoutCurrentUser()">
+                            <i data-lucide="log-out"></i>
+                            <span>Wyloguj się</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User summary -->
+                <div class="user-profile-summary" onclick="switchTab('profile')">
+                    <div class="avatar-wrapper">
+                        <img src="" alt="Avatar" class="user-avatar" id="current-user-avatar">
+                        <span class="status-dot"></span>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name" id="current-user-name">Jan Kowalski</span>
+                        <span class="user-handle" id="current-user-handle">@jankowalski</span>
+                    </div>
+                </div>
+
+                <!-- Copyright -->
+                <div class="sidebar-copyright" onclick="openRulesModal()" style="cursor:pointer;" title="Kliknij, aby zobaczyć Regulamin i Zasady">
+                    &copy; 2026 <strong>SocialSphere</strong> by <span>Itzz_Sigma03</span><br>
+                    All rights reserved <span style="font-size:9px;opacity:0.6;display:block;margin-top:2px;">(Zasady i Regulamin 📜)</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <main class="main-wrapper">
+            
+            <!-- Header bar -->
+            <header class="header">
+                <div class="search-box">
+                    <i data-lucide="search"></i>
+                    <input type="text" placeholder="Szukaj w SocialSphere..." class="search-input" id="global-search">
+                </div>
+                
+                <div class="header-actions">
+                    <!-- Dynamic Theme Switcher -->
+                    <button class="action-btn" onclick="toggleTheme()" title="Zmień motyw" id="theme-toggle-btn">
+                        <i data-lucide="sun" id="theme-icon"></i>
+                    </button>
+                    <button class="action-btn" onclick="switchTab('chat')" title="Wiadomości">
+                        <i data-lucide="mail"></i>
+                        <span class="badge" id="chat-badge-count">2</span>
+                    </button>
+                    <!-- Notifications button dropdown toggle -->
+                    <button class="action-btn" onclick="toggleNotificationsDropdown(event)" title="Powiadomienia" id="notifications-bell-btn">
+                        <i data-lucide="bell"></i>
+                        <span class="badge" id="notif-badge-count">3</span>
+                    </button>
+                    
+                    <!-- Dynamic Notifications dropdown list -->
+                    <div class="notifications-dropdown" id="notifications-dropdown-menu">
+                        <div class="notification-header-item">
+                            <span>Powiadomienia</span>
+                            <a href="#" onclick="markAllNotificationsRead(event)" style="color: var(--orange-primary); text-decoration: none; font-size: 11px;">Oznacz jako przeczytane</a>
+                        </div>
+                        <div id="notifications-list-container">
+                            <!-- Dynamic items -->
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dynamic Content Body -->
+            <div class="content-body">
+                
+                <!-- TAB 1: FEED & NEWS -->
+                <section class="feed-container" id="feed-tab-content">
+
+                    <!-- LIVE ORBS BAR (inspirowane Story) -->
+                    <div class="live-orbs-section">
+                        <div class="live-orbs-bar" id="live-orbs-bar">
+                            <!-- JS inserts orb items here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Create Post Box -->
+                    <div class="create-post-card">
+                        <div class="post-input-wrapper">
+                            <img src="" alt="Avatar" class="user-avatar" id="post-box-avatar">
+                            <textarea placeholder="Co nowego w Twojej sferze?" class="post-textarea" id="post-text-input"></textarea>
+                        </div>
+                        
+                        <!-- Selected Image Preview -->
+                        <div class="post-preview-image-container" id="post-preview-container">
+                            <img src="" alt="Preview" class="post-preview-image" id="post-preview-img">
+                            <button class="remove-preview-btn" onclick="clearSelectedImage()" title="Usuń grafikę">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="post-actions-bar">
+                            <div class="post-tools">
+                                <button class="tool-icon-btn" onclick="openImageSelector()" title="Dodaj zdjęcie">
+                                    <i data-lucide="image" style="color: var(--orange-primary);"></i>
+                                    <span>Zdjęcie</span>
+                                </button>
+                                <button class="tool-icon-btn" onclick="insertEmoji('😊')" title="Dodaj emoji">
+                                    <i data-lucide="smile" style="color: #ffcc00;"></i>
+                                    <span>Emoji</span>
+                                </button>
+                            </div>
+                            <button class="post-submit-btn" onclick="addNewPost()">
+                                <span>Opublikuj</span>
+                                <i data-lucide="send"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Post Feed -->
+                    <div id="posts-feed">
+                        <!-- Rendered by JS -->
+                    </div>
+                </section>
+
+                <!-- TAB 1.5: ORBITS (short loops, inspiration: Reels) -->
+                <section class="orbits-section" id="orbits-tab-content" style="display:none;">
+                    <div class="orbits-header">
+                        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 class="orbits-title"><i data-lucide="aperture" style="color:var(--orange-primary);width:22px;height:22px;"></i> Orbity</h2>
+                                <p class="orbits-subtitle">Krótkie wizualizacje społeczności SocialSphere</p>
+                            </div>
+                            <button class="primary-btn" id="add-orbit-btn" onclick="openAddOrbitModal()" style="display:flex;align-items:center;gap:6px;padding:9px 18px;font-size:14px;">
+                                <i data-lucide="plus-circle" style="width:16px;height:16px;"></i> Dodaj Orbitę
+                            </button>
+                        </div>
+                    </div>
+                    <div class="orbits-feed" id="orbits-feed">
+                        <!-- JS inserts orbit cards here -->
+                    </div>
+                </section>
+
+                <!-- ADD ORBIT MODAL -->
+                <div id="add-orbit-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:3000; align-items:center; justify-content:center;">
+                    <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:18px; padding:28px; width:min(420px, 92vw); box-shadow:0 0 40px rgba(255,106,0,0.2);">
+                        <h3 style="margin:0 0 18px; font-size:18px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                            <i data-lucide="aperture" style="color:var(--orange-primary);width:20px;height:20px;"></i> Nowa Orbita
+                        </h3>
+
+                        <!-- Preview canvas -->
+                        <div style="display:flex; justify-content:center; margin-bottom:16px;">
+                            <canvas id="orbit-preview-canvas" width="260" height="180" style="border-radius:12px; border:1px solid var(--border-color);"></canvas>
+                        </div>
+
+                        <!-- Theme picker -->
+                        <label style="font-size:13px;color:var(--text-muted);display:block;margin-bottom:6px;">Motyw wizualizacji</label>
+                        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px;" id="orbit-theme-picker">
+                            <button class="orbit-theme-btn active" data-theme="sparks" onclick="selectOrbitTheme('sparks', this)">🔥 Iskry</button>
+                            <button class="orbit-theme-btn" data-theme="matrix" onclick="selectOrbitTheme('matrix', this)">💻 Matrix</button>
+                            <button class="orbit-theme-btn" data-theme="particles" onclick="selectOrbitTheme('particles', this)">✨ Cząstki</button>
+                            <button class="orbit-theme-btn" data-theme="waves" onclick="selectOrbitTheme('waves', this)">🌊 Fale</button>
+                            <button class="orbit-theme-btn" data-theme="glitch" onclick="selectOrbitTheme('glitch', this)">⚡ Glitch</button>
+                            <button class="orbit-theme-btn" data-theme="own_pulse" onclick="selectOrbitTheme('own_pulse', this)">🟠 Puls</button>
+                        </div>
+
+                        <!-- Description -->
+                        <label style="font-size:13px;color:var(--text-muted);display:block;margin-bottom:6px;">Opis Orbity (max 80 znaków)</label>
+                        <input type="text" id="orbit-desc-input" maxlength="80" placeholder="Napisz coś o swojej Orbicie..." oninput="previewOrbit()"
+                            style="width:100%;box-sizing:border-box;background:var(--bg-input,#1a1a1a);border:1px solid var(--border-color);border-radius:10px;color:var(--text-primary);padding:10px 14px;font-size:14px;margin-bottom:18px;">
+
+                        <div style="display:flex; gap:10px;">
+                            <button class="secondary-btn" onclick="closeAddOrbitModal()" style="flex:1;">Anuluj</button>
+                            <button class="primary-btn" onclick="confirmAddOrbit()" style="flex:1;">Opublikuj Orbitę 🚀</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: CHATS & MESSAGES -->
+                <section class="chat-tab-container" id="chat-tab-content">
+                    
+                    <!-- Chats List sub-panel -->
+                    <div class="chat-list-panel">
+                        <div class="chat-panel-header">
+                            <h2 class="chat-panel-title">Wiadomości</h2>
+                            <div class="chat-search">
+                                <i data-lucide="search"></i>
+                                <input type="text" placeholder="Szukaj czatu..." class="chat-search-input" id="chat-search-input" onkeyup="filterChats()">
+                            </div>
+                        </div>
+                        
+                        <div class="chat-channels-list">
+                            <div class="chat-list-section-title">Oficjalne kanały</div>
+                            <div id="official-channels-container">
+                                <!-- Rendered by JS -->
+                            </div>
+                            
+                            <div class="chat-list-section-title" style="margin-top: 14px;">Bezpośrednie czaty</div>
+                            <div id="direct-chats-container">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Window sub-panel -->
+                    <div class="chat-window" id="active-chat-window">
+                        <!-- Chat header -->
+                        <div class="chat-window-header">
+                            <div class="chat-header-user">
+                                <button class="action-btn" id="chat-back-mobile-btn" onclick="closeChatMobile()" style="display: none; margin-right: 8px;">
+                                    <i data-lucide="arrow-left"></i>
+                                </button>
+                                <img src="" alt="Avatar" class="chat-header-avatar" id="chat-header-avatar-img">
+                                <div class="chat-header-info">
+                                    <span class="chat-header-name" id="chat-header-display-name">Wsparcie SocialSphere</span>
+                                    <span class="chat-header-status" id="chat-header-status-text">Kanał Oficjalny</span>
+                                </div>
+                            </div>
+                            <div class="chat-header-actions">
+                                <button class="action-btn" onclick="triggerCallSimulation('audio')" title="Zadzwoń">
+                                    <i data-lucide="phone"></i>
+                                </button>
+                                <button class="action-btn" onclick="triggerCallSimulation('video')" title="Połączenie wideo">
+                                    <i data-lucide="video"></i>
+                                </button>
+                                <button class="action-btn" onclick="switchTab('settings')" title="Więcej">
+                                    <i data-lucide="more-vertical"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Chat messages -->
+                        <div class="chat-messages-scroll" id="chat-messages-scroll-area">
+                            <!-- Messages dynamically loaded by JS -->
+                        </div>
+                        
+                        <!-- Chat message input -->
+                        <!-- Standard input (for normal chats and owner on announcements) -->
+                        <div class="chat-input-panel" id="chat-input-normal">
+                            <div class="chat-input-wrapper">
+                                <input type="text" placeholder="Napisz wiadomość..." class="chat-message-input" id="chat-message-text-input" onkeypress="handleChatKeyPress(event)">
+                                <div class="chat-input-tools">
+                                    <button class="chat-input-tool-btn" onclick="insertChatEmoji('🔥')" title="Ogień">
+                                        <span>🔥</span>
+                                    </button>
+                                    <button class="chat-input-tool-btn" onclick="insertChatEmoji('👍')" title="Kciuk w górę">
+                                        <span>👍</span>
+                                    </button>
+                                </div>
+                                <button class="chat-send-btn" id="chat-send-btn-main" onclick="sendChatMessage()">
+                                    <i data-lucide="send"></i>
+                                </button>
+                            </div>
+                            <!-- Owner announcement badge shown only in announcements channel -->
+                            <div id="announcement-owner-bar" style="display:none; padding: 6px 14px; font-size: 12px; color: var(--orange-primary); display:none; align-items:center; gap:6px;">
+                                <i data-lucide="megaphone" style="width:14px;height:14px;"></i>
+                                <span>Tryb Właściciela — Twoje ogłoszenie trafi do <strong>wszystkich użytkowników</strong></span>
+                            </div>
+                        </div>
+                        <!-- Locked panel — shown for non-owners on announcements channel -->
+                        <div class="chat-input-panel" id="chat-input-locked" style="display:none;">
+                            <div style="width:100%; text-align:center; padding: 14px 20px; color: var(--text-muted); font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                                <i data-lucide="lock" style="width:16px;height:16px; color:var(--orange-primary);"></i>
+                                <span>Ten kanał jest tylko do odczytu — ogłoszenia wysyła wyłącznie <strong style="color:var(--orange-primary);">Właściciel ★</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 3: USER PROFILE PAGE (redesigned with grid tabs) -->
+                <section class="profile-tab-wrapper" id="profile-tab-content">
+                    <!-- Profile header card -->
+                    <div class="profile-card">
+                        <div class="profile-avatar-wrapper">
+                            <div class="profile-orb-ring" id="profile-orb-ring-indicator">
+                                <img src="" alt="Avatar" class="profile-avatar-big" id="profile-avatar-big-img">
+                            </div>
+                            <!-- Own Note Bubble -->
+                            <div class="profile-note-bubble" id="profile-note-bubble" onclick="openMyNoteEditor()">
+                                <span id="profile-note-text">+ Notatka</span>
+                            </div>
+                        </div>
+                        <div class="profile-details">
+                            <h2 class="profile-display-name" id="profile-display-name-text">Jan Kowalski</h2>
+                            <p class="profile-handle-tag" id="profile-handle-tag-text">@jankowalski</p>
+                            <p class="profile-bio" id="profile-bio-text">Witaj w mojej przestrzeni na SocialSphere!</p>
+                            
+                            <div class="profile-stats-bar">
+                                <div>
+                                    <span class="profile-stat-number" id="profile-posts-count">0</span>
+                                    <span class="profile-stat-label">Posty</span>
+                                </div>
+                                <div>
+                                    <span class="profile-stat-number" id="profile-followers-count">0</span>
+                                    <span class="profile-stat-label">Obserwujący</span>
+                                </div>
+                                <div>
+                                    <span class="profile-stat-number" id="profile-following-count">0</span>
+                                    <span class="profile-stat-label">Obserwowani</span>
+                                </div>
+                            </div>
+
+                            <div class="profile-action-btns">
+                                <button class="profile-edit-btn" onclick="scrollToEditProfile()">
+                                    <i data-lucide="edit-3" style="width:14px;height:14px;"></i>
+                                    Edytuj profil
+                                </button>
+                                <button class="profile-archive-btn" onclick="showSavedPostsQuick()">
+                                    <i data-lucide="archive" style="width:14px;height:14px;"></i>
+                                    Zapisane
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Tabs (Grid / Saved / Liked) -->
+                    <div class="profile-tabs-bar">
+                        <button class="profile-tab-btn active" id="profile-tab-grid" onclick="switchProfileTab('grid')">
+                            <i data-lucide="grid" style="width:16px;height:16px;"></i>
+                            Twoje sfery
+                        </button>
+                        <button class="profile-tab-btn" id="profile-tab-saved" onclick="switchProfileTab('saved')">
+                            <i data-lucide="bookmark" style="width:16px;height:16px;"></i>
+                            Zapisane
+                        </button>
+                        <button class="profile-tab-btn" id="profile-tab-liked" onclick="switchProfileTab('liked')">
+                            <i data-lucide="heart" style="width:16px;height:16px;"></i>
+                            Polubione
+                        </button>
+                    </div>
+
+                    <!-- Post Grid Container -->
+                    <div class="profile-posts-grid" id="profile-posts-grid">
+                        <!-- JS renders grid items -->
+                    </div>
+
+                    <!-- Edit profile section (scrolled to) -->
+                    <div class="edit-profile-section" id="edit-profile-scroll-anchor">
+                        <h3 class="edit-profile-title">Edytuj dane profilu</h3>
+                        
+                        <div class="edit-profile-row">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-fullname">Imię i nazwisko</label>
+                                <input type="text" id="edit-fullname" class="form-input" placeholder="Jan Kowalski">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="edit-nickname">Nick</label>
+                                <input type="text" id="edit-nickname" class="form-input" placeholder="jankowalski">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="edit-bio">O sobie</label>
+                            <textarea id="edit-bio" class="form-input" style="min-height: 80px; resize: vertical;" placeholder="Napisz kilka słów o sobie..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Zmień zdjęcie profilowe</label>
+                            <input type="file" id="edit-avatar-file" accept="image/*" class="form-input" onchange="handleEditAvatarSelected(event)">
+                        </div>
+                        
+                        <button class="post-submit-btn" onclick="saveProfileChanges()" style="margin-top: 10px;">
+                            <i data-lucide="check"></i>
+                            <span>Zapisz zmiany</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- TAB 4: SETTINGS & SECURITY PAGE -->
+                <section class="settings-tab-wrapper" id="settings-tab-content">
+                    <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px; color: var(--text-white);">Ustawienia aplikacji</h2>
+                    
+                    <!-- View Configuration widget -->
+                    <div class="settings-card">
+                        <h3 class="edit-profile-title" style="margin-top: 0;">Wygląd i powiadomienia</h3>
+                        
+                        <div class="setting-option-row">
+                            <div class="setting-option-meta">
+                                <span class="setting-option-title">Motyw ciemny</span>
+                                <span class="setting-option-desc">Włącz głęboką cyberpunkową czerń w tle</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="settings-darkmode-toggle" checked onchange="handleSettingsThemeToggle(this)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-option-row">
+                            <div class="setting-option-meta">
+                                <span class="setting-option-title">Dźwięki połączeń</span>
+                                <span class="setting-option-desc">Odtwarzaj sygnały audio podczas połączeń głosowych</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="settings-sounds-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-option-row">
+                            <div class="setting-option-meta">
+                                <span class="setting-option-title">Dźwięki wiadomości</span>
+                                <span class="setting-option-desc">Odtwarzaj powiadomienie po przyjściu wiadomości</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="settings-msg-sounds-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Security config widget -->
+                    <div class="settings-card">
+                        <h3 class="edit-profile-title" style="margin-top: 0; color: var(--orange-primary); border-color: rgba(255, 102, 0, 0.1);">Bezpieczeństwo konta i 2FA</h3>
+                        
+                        <!-- Toggle F2A from settings -->
+                        <div class="setting-option-row" style="border-bottom: none; padding-bottom: 0;">
+                            <div class="setting-option-meta">
+                                <span class="setting-option-title">Weryfikacja dwuetapowa (2FA)</span>
+                                <span class="setting-option-desc">Zabezpiecz konto dwoma pytaniami pomocniczymi (zagadkami)</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="settings-2fa-toggle" onchange="toggleSettings2FAFields(this)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <!-- Settings edit F2A questions -->
+                        <div class="collapsible-2fa-section" id="settings-2fa-fields-box" style="margin-top: 20px;">
+                            <div class="collapsible-2fa-title">
+                                <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+                                <span>Skonfiguruj swoje zagadki 2FA</span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="settings-q1">Pytanie 1</label>
+                                <input type="text" id="settings-q1" class="form-input" placeholder="np. Mój pierwszy pies?">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="settings-a1">Odpowiedź 1</label>
+                                <input type="text" id="settings-a1" class="form-input" placeholder="Wpisz odpowiedź">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="settings-q2">Pytanie 2</label>
+                                <input type="text" id="settings-q2" class="form-input" placeholder="np. Mój ulubiony kolor?">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="settings-a2">Odpowiedź 2</label>
+                                <input type="text" id="settings-a2" class="form-input" placeholder="Wpisz odpowiedź">
+                            </div>
+                        </div>
+
+                        <!-- Update password fields -->
+                        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-white);">Zmień hasło logowania</h4>
+                            <div class="edit-profile-row" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div class="form-group">
+                                    <label class="form-label" for="settings-old-pass">Obecne hasło</label>
+                                    <input type="password" id="settings-old-pass" class="form-input" placeholder="Wpisz obecne hasło">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="settings-new-pass">Nowe hasło</label>
+                                    <input type="password" id="settings-new-pass" class="form-input" placeholder="Wpisz nowe hasło (min. 6 znaków)">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="post-submit-btn" onclick="saveSecuritySettings()" style="margin-top: 16px;">
+                            <i data-lucide="shield"></i>
+                            <span>Zapisz ustawienia bezpieczeństwa</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Danger zone -->
+                    <div class="settings-card" style="border-color: rgba(255, 51, 51, 0.2);">
+                        <h3 class="edit-profile-title" style="color: #ff3333; border-color: rgba(255, 51, 51, 0.1);">Strefa bezpieczeństwa</h3>
+                        
+                        <div class="setting-option-row" style="border-bottom: none; padding-bottom: 0;">
+                            <div class="setting-option-meta">
+                                <span class="setting-option-title" style="color: #ff3333;">Wyloguj się z konta</span>
+                                <span class="setting-option-desc">Bezpiecznie zakończ obecną sesję użytkownika</span>
+                            </div>
+                            <button class="danger-action-btn" onclick="logoutCurrentUser()" style="border-color: #ff9900; color: #ff9900;">Wyloguj się</button>
+                        </div>
+                        
+                        <div class="setting-option-row" style="margin-top: 16px;">
+                            <div class="setting-option-meta">
+                                <span class="setting-option-title" style="color: #ff3333;">Resetuj wszystkie dane</span>
+                                <span class="setting-option-desc">Wyczyść całą pamięć lokalną localStorage (usunięcie kont, postów i czatów)</span>
+                            </div>
+                            <button class="danger-action-btn" onclick="resetAllAppData()">Resetuj bazę danych</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 5: ADMIN / OWNER PANEL PAGE -->
+                <section class="admin-tab-wrapper" id="admin-tab-content" style="display: none; padding: 30px; overflow-y: auto; height: 100%;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 24px; background: rgba(255,102,0,0.03); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: 20px 24px;">
+                        <div>
+                            <h2 style="font-size: 24px; font-weight: 800; color: var(--text-white); margin: 0; display:flex; align-items:center; gap: 10px;">
+                                <i data-lucide="shield-check" style="color: var(--orange-primary);"></i>
+                                Panel Administratora / Właściciela
+                            </h2>
+                            <p style="font-size: 13px; color: var(--text-gray); margin-top: 4px;">Dostęp wyłączny dla Właściciela platformy (Gabrys Rojewski / Itzz_Sigma03)</p>
+                        </div>
+                        <span style="font-size: 13px; font-weight: 700; padding: 8px 16px; background: rgba(255,102,0,0.15); border: 1px solid rgba(255,102,0,0.3); border-radius: 20px; color: var(--orange-primary); display:flex; align-items:center; gap: 6px;">
+                            👑 WŁAŚCICIEL PLATFORMY
+                        </span>
+                    </div>
+
+                    <!-- Admin Analytics Stats Cards -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px;">
+                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 18px;">
+                            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-gray); font-weight: 700;">Użytkownicy w bazie</span>
+                            <div style="font-size: 26px; font-weight: 800; color: var(--text-white); margin-top: 4px;" id="admin-stat-users-count">0</div>
+                        </div>
+                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 18px;">
+                            <span style="font-size: 11px; text-transform: uppercase; color: var(--orange-primary); font-weight: 700;">Zweryfikowane konta (★)</span>
+                            <div style="font-size: 26px; font-weight: 800; color: var(--orange-primary); margin-top: 4px;" id="admin-stat-verified-count">0</div>
+                        </div>
+                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 18px;">
+                            <span style="font-size: 11px; text-transform: uppercase; color: #ff5555; font-weight: 700;">Zablokowane konta (Ban)</span>
+                            <div style="font-size: 26px; font-weight: 800; color: #ff5555; margin-top: 4px;" id="admin-stat-banned-count">0</div>
+                        </div>
+                        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 18px;">
+                            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-gray); font-weight: 700;">Wszystkie posty</span>
+                            <div style="font-size: 26px; font-weight: 800; color: var(--text-white); margin-top: 4px;" id="admin-stat-posts-count">0</div>
+                        </div>
+                    </div>
+
+                    <!-- User Management Section -->
+                    <div class="settings-card" style="margin-bottom: 24px;">
+                        <h3 class="edit-profile-title" style="margin-top: 0; display:flex; align-items:center; gap: 8px;">
+                            <i data-lucide="users" style="color: var(--orange-primary);"></i>
+                            Zarządzanie kontami użytkowników
+                        </h3>
+                        <p style="font-size: 13px; color: var(--text-gray); margin-bottom: 16px;">
+                            Jednym kliknięciem nadawaj weryfikację (gwiazdkę ★), banuj użytkowników łamiących regulamin (18+/spam) lub trwale usuwaj konta.
+                        </p>
+
+                        <div id="admin-users-table-container">
+                            <!-- JS renders dynamic user list -->
+                        </div>
+                    </div>
+
+                    <!-- Global Post Moderation Section -->
+                    <div class="settings-card">
+                        <h3 class="edit-profile-title" style="margin-top: 0; display:flex; align-items:center; gap: 8px;">
+                            <i data-lucide="trash-2" style="color: #ff5555;"></i>
+                            Moderacja wpisów (Usuwanie postów łamiących zasady)
+                        </h3>
+                        <div id="admin-posts-moderation-container">
+                            <!-- JS renders posts moderation list -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Right Sidebar Widgets -->
+                <aside class="right-sidebar" id="app-right-sidebar">
+                    
+                    <!-- Trends Widget -->
+                    <div class="widget">
+                        <h3 class="widget-title">
+                            <i data-lucide="trending-up" style="color: var(--orange-primary); width: 18px; height: 18px;"></i>
+                            Trendujące sfery
+                        </h3>
+                        <ul class="widget-list">
+                            <li class="trending-item" onclick="searchTrend('#SocialSphere')">
+                                <span class="trend-category">Technologia</span>
+                                <h4 class="trend-tag">#SocialSphere</h4>
+                                <span class="trend-count">12.5k postów</span>
+                            </li>
+                            <li class="trending-item" onclick="searchTrend('#Antigravity')">
+                                <span class="trend-category">Kodowanie</span>
+                                <h4 class="trend-tag">#Antigravity</h4>
+                                <span class="trend-count">8.2k postów</span>
+                            </li>
+                            <li class="trending-item" onclick="searchTrend('#OrangeDesign')">
+                                <span class="trend-category">UI/UX Design</span>
+                                <h4 class="trend-tag">#OrangeDesign</h4>
+                                <span class="trend-count">5.1k postów</span>
+                            </li>
+                            <li class="trending-item" onclick="searchTrend('#WebDev')">
+                                <span class="trend-category">Programowanie</span>
+                                <h4 class="trend-tag">#WebDev</h4>
+                                <span class="trend-count">15.9k postów</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Who to follow widget (dynamically rendered from real registered users) -->
+                    <div class="widget">
+                        <h3 class="widget-title">
+                            <i data-lucide="users" style="color: var(--orange-primary); width: 18px; height: 18px;"></i>
+                            Kogo obserwować
+                        </h3>
+                        <ul class="widget-list" id="suggested-users-list">
+                            <!-- Rendered by JS from real registered users -->
+                        </ul>
+                    </div>
+                </aside>
+
+            </div>
+        </main>
+        
+        <!-- Mobile Bottom Nav -->
+        <nav class="mobile-nav">
+            <div class="mobile-nav-item active" id="mobile-nav-feed" onclick="switchTab('feed')">
+                <i data-lucide="layout-dashboard"></i>
+            </div>
+            <div class="mobile-nav-item" id="mobile-nav-orbits" onclick="switchTab('orbits')">
+                <i data-lucide="aperture"></i>
+            </div>
+            <div class="mobile-nav-item" id="mobile-nav-chat" onclick="switchTab('chat')">
+                <i data-lucide="message-square"></i>
+            </div>
+            <div class="mobile-nav-item" id="mobile-nav-profile" onclick="switchTab('profile')">
+                <i data-lucide="user"></i>
+            </div>
+            <div class="mobile-nav-item" id="mobile-nav-settings" onclick="switchTab('settings')">
+                <i data-lucide="settings"></i>
+            </div>
+        </nav>
+        
+    </div>
+
+
+    <!-- 3a. STORY / ORB VIEWER OVERLAY -->
+    <div class="story-viewer-overlay" id="story-viewer-overlay">
+        <div class="story-progress-bar-container" id="story-progress-container">
+            <!-- Progress segments inserted by JS -->
+        </div>
+        <button class="story-close-btn" onclick="closeStoryViewer()">
+            <i data-lucide="x"></i>
+        </button>
+        <div class="story-author-info" id="story-author-info">
+            <img src="" alt="" class="story-author-avatar" id="story-viewer-avatar">
+            <div>
+                <span class="story-author-name" id="story-viewer-name">Kamil Nowak</span>
+                <span class="story-author-time" id="story-viewer-time">2 min temu</span>
+            </div>
+        </div>
+        <div class="story-content-area" id="story-content-area">
+            <canvas id="story-canvas" class="story-canvas"></canvas>
+        </div>
+        <div class="story-nav-zones">
+            <div class="story-nav-prev" onclick="prevStorySlide()"></div>
+            <div class="story-nav-next" onclick="nextStorySlide()"></div>
+        </div>
+    </div>
+
+    <!-- 3b. MY ORB NOTE EDITOR -->
+    <div class="note-editor-overlay" id="note-editor-overlay">
+        <div class="note-editor-card">
+            <h3 class="note-editor-title"><i data-lucide="edit-3" style="width:18px;height:18px;color:var(--orange-primary);"></i> Twoja Notatka Orbity</h3>
+            <p style="font-size:13px;color:var(--text-gray);margin-bottom:16px;">Wpisz myśl, którą zobaczą Twoi znajomi przez 24h.</p>
+            <textarea class="note-editor-textarea" id="note-editor-textarea" maxlength="60" placeholder="Co masz na myśli? (max 60 znaków)"></textarea>
+            <div style="display:flex;gap:12px;margin-top:16px;">
+                <button class="post-submit-btn" onclick="saveMyNote()" style="flex:1;justify-content:center;">
+                    <i data-lucide="check"></i><span>Zapisz</span>
+                </button>
+                <button class="modal-btn cancel" onclick="closeMyNoteEditor()" style="flex:1;">Anuluj</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3c. POST GRID DETAIL MODAL -->
+    <div class="post-detail-modal" id="post-detail-modal">
+        <div class="post-detail-content">
+            <button class="story-close-btn" onclick="closePostDetail()" style="position:absolute;top:14px;right:14px;z-index:10;">
+                <i data-lucide="x"></i>
+            </button>
+            <div class="post-detail-image-side">
+                <img src="" alt="Post Image" id="post-detail-img">
+            </div>
+            <div class="post-detail-info-side">
+                <div class="post-detail-author" id="post-detail-author">
+                    <!-- Author info inserted by JS -->
+                </div>
+                <div class="post-detail-text" id="post-detail-text"></div>
+                <div class="post-detail-actions" id="post-detail-actions">
+                    <!-- Like, comment counts inserted by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. CALL SIMULATION OVERLAY -->
+    <div class="call-overlay" id="call-simulation-overlay">
+        <div class="call-container">
+            <img src="" alt="Call Contact Avatar" class="call-avatar" id="call-contact-avatar-img">
+            <h3 class="call-name" id="call-contact-name-label">Kamil Nowak</h3>
+            <span class="call-status-label" id="call-status-label-text">Łączenie...</span>
+            
+            <div class="call-controls">
+                <button class="call-btn mute" id="call-mute-toggle-btn" onclick="toggleCallMute()" title="Wycisz mikrofon">
+                    <i data-lucide="mic-off"></i>
+                </button>
+                <button class="call-btn decline" onclick="endCallSimulation()" title="Rozłącz się">
+                    <i data-lucide="phone-off"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 4. IMAGE ATTACHMENT SELECTOR MODAL -->
+    <div class="image-selector-modal" id="image-selector-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Wybierz grafikę do postu</h3>
+                <button class="close-modal-btn" onclick="closeImageSelector()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="image-grid">
+                <div class="image-grid-option" onclick="selectImageOption('assets/post1.jpg', this)">
+                    <img src="assets/post1.jpg" alt="Cyber City Night">
+                </div>
+                <div class="image-grid-option" onclick="selectImageOption('assets/post2.jpg', this)">
+                    <img src="assets/post2.jpg" alt="Developer Workspace">
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="modal-btn cancel" onclick="closeImageSelector()">Anuluj</button>
+                <button class="modal-btn confirm" onclick="confirmImageSelection()">Zatwierdź</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. RULES & TERMS COPYRIGHT MODAL -->
+    <div class="rules-modal-overlay" id="rules-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
+        <div class="rules-modal-card" style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--border-radius-lg); padding:32px; width:90%; max-width:520px; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(255,102,0,0.15); animation:zoomIn 0.3s ease-out;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="background:rgba(255,102,0,0.15); border:1px solid rgba(255,102,0,0.3); width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--orange-primary); font-size:20px;">📜</div>
+                    <div>
+                        <h3 style="font-size:18px; font-weight:800; color:var(--text-white); margin:0;">Zasady i Regulamin <span style="color:var(--orange-primary);">SocialSphere</span></h3>
+                        <p style="font-size:12px; color:var(--text-gray); margin:2px 0 0;">Oficjalne zasady platformy autorstwa Itzz_Sigma03</p>
+                    </div>
+                </div>
+                <button onclick="closeRulesModal()" style="background:transparent; border:none; color:var(--text-gray); font-size:20px; cursor:pointer; padding:4px;">✕</button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:16px; font-size:13px; line-height:1.6; color:var(--text-white);">
+                <div style="background:rgba(255,51,51,0.08); border:1px solid rgba(255,51,51,0.25); padding:14px; border-radius:12px;">
+                    <h4 style="color:#ff5555; font-size:14px; margin-bottom:6px; display:flex; align-items:center; gap:8px;">🔞 1. Kategoryczny zakaz treści 18+ i NSFW</h4>
+                    <p style="margin:0; color:#ddd; font-size:12px;">Obowiązuje bezwzględny zakaz publikowania, wysyłania lub udostępniania materiałów erotycznych, pornograficznych, nagości, brutalnych treści oraz przemocy. Konta publikujące takie treści będą natychmiastowo i bezpowrotnie usuwane z platformy.</p>
+                </div>
+
+                <div style="background:rgba(255,102,0,0.05); border:1px solid var(--border-color); padding:14px; border-radius:12px;">
+                    <h4 style="color:var(--orange-primary); font-size:14px; margin-bottom:6px; display:flex; align-items:center; gap:8px;">🤖 2. Brak botów i spamu</h4>
+                    <p style="margin:0; color:var(--text-gray); font-size:12px;">SocialSphere to autentyczna społeczność bez fikcyjnych botów. Używanie zautomatyzowanych skryptów do spamowania, generowania fałszywych postów lub wiadomości jest ściśle zabronione.</p>
+                </div>
+
+                <div style="background:rgba(255,102,0,0.05); border:1px solid var(--border-color); padding:14px; border-radius:12px;">
+                    <h4 style="color:var(--orange-primary); font-size:14px; margin-bottom:6px; display:flex; align-items:center; gap:8px;">🤝 3. Szacunek i bezpieczeństwo społeczności</h4>
+                    <p style="margin:0; color:var(--text-gray); font-size:12px;">Nękanie, mowa nienawiści, obrażanie innych użytkowników i podszywanie się pod osoby trzecie są niedozwolone. Zachowaj kulturę i szacunek wobec innych członków platformy.</p>
+                </div>
+
+                <div style="background:rgba(255,102,0,0.05); border:1px solid var(--border-color); padding:14px; border-radius:12px;">
+                    <h4 style="color:var(--orange-primary); font-size:14px; margin-bottom:6px; display:flex; align-items:center; gap:8px;">⭐ 4. Weryfikacja konta (Gwiazdka ★)</h4>
+                    <p style="margin:0; color:var(--text-gray); font-size:12px;">Status konta zweryfikowanego (gwiazdka weryfikacji ★) przydzielany jest wyłącznie przez Właściciela / Administratora platformy za pomocą oficjalnego narzędzia weryfikacji.</p>
+                </div>
+
+                <div style="background:rgba(255,102,0,0.08); border:1px solid rgba(255,102,0,0.3); padding:14px; border-radius:12px; text-align:center;">
+                    <h4 style="color:var(--orange-primary); font-size:13px; margin-bottom:4px;">© 2026 SocialSphere by Itzz_Sigma03</h4>
+                    <p style="margin:0; color:var(--text-gray); font-size:11px;">Wszelkie prawa zastrzeżone. Autorem i właścicielem platformy jest <strong>Gabrys Rojewski (Itzz_Sigma03)</strong>.</p>
+                </div>
+            </div>
+
+            <button onclick="closeRulesModal()" style="width:100%; margin-top:20px; background:var(--orange-primary); color:#fff; border:none; padding:12px; border-radius:30px; font-weight:700; font-size:14px; cursor:pointer; transition:all 0.2s;">
+                Rozumiem i akceptuję zasady
+            </button>
+        </div>
+    </div>
+
+    <!-- 6. USER WARNING OVERLAY MODAL -->
+    <div class="rules-modal-overlay" id="user-warning-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(12px);">
+        <div class="rules-modal-card" style="background:var(--bg-card); border:2px solid #ffaa00; border-radius:var(--border-radius-lg); padding:32px; width:90%; max-width:480px; box-shadow:0 20px 60px rgba(0,0,0,0.9), 0 0 50px rgba(255,170,0,0.25); animation:zoomIn 0.3s ease-out; text-align:center;">
+            <div style="width:60px; height:60px; border-radius:50%; background:rgba(255,170,0,0.15); border:2px solid #ffaa00; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#ffaa00; font-size:28px;">
+                ⚠️
+            </div>
+
+            <h3 style="font-size:20px; font-weight:800; color:var(--text-white); margin-bottom:8px;">Oficjalne Ostrzeżenie od Administracji</h3>
+            <p style="font-size:13px; color:var(--text-gray); margin-bottom:20px;">Właściciel platformy wydał ostrzeżenie dla Twojego konta.</p>
+
+            <div style="background:rgba(255,170,0,0.08); border:1px dashed rgba(255,170,0,0.4); border-radius:12px; padding:16px; text-align:left; margin-bottom:20px;">
+                <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#ffaa00; letter-spacing:0.5px;">Powód ostrzeżenia:</span>
+                <p style="font-size:14px; color:var(--text-white); font-weight:600; margin:6px 0 0; line-height:1.5;" id="user-warning-reason-text">
+                    Niestosowne zachowanie lub złamanie punktu regulaminu.
+                </p>
+                <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:8px;" id="user-warning-date-text">Data wydania: Dzisiaj</span>
+            </div>
+
+            <p style="font-size:12px; color:var(--text-gray); line-height:1.5; margin-bottom:24px;">
+                Przestrzegaj zasad platformy (zakaz 18+, spamu i obrażania). Kolejne naruszenie może skutkować <strong>czasową lub trwałą blokadą konta (Banem)</strong>.
+            </p>
+
+            <button onclick="acknowledgeUserWarning()" style="width:100%; background:#ffaa00; color:#000; border:none; padding:14px; border-radius:30px; font-weight:800; font-size:14px; cursor:pointer; transition:all 0.2s; box-shadow:0 6px 20px rgba(255,170,0,0.3);">
+                Rozumiem i obiecuję przestrzegać zasad
+            </button>
+        </div>
+    </div>
+
+    <!-- 7. ADMIN BAN DURATION MODAL -->
+    <div class="rules-modal-overlay" id="admin-ban-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10001; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
+        <div class="rules-modal-card" style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--border-radius-lg); padding:28px; width:90%; max-width:440px; box-shadow:0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(255,51,51,0.15);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; border-bottom:1px solid var(--border-color); padding-bottom:14px;">
+                <h3 style="font-size:16px; font-weight:800; color:#ff5555; margin:0; display:flex; align-items:center; gap:8px;">
+                    🚫 Zablokuj użytkownika (Ban)
+                </h3>
+                <button onclick="closeAdminBanModal()" style="background:transparent; border:none; color:var(--text-gray); font-size:18px; cursor:pointer;">✕</button>
+            </div>
+
+            <p style="font-size:13px; color:var(--text-gray); margin-bottom:16px;" id="admin-ban-target-user-info">Blokujesz użytkownika: ...</p>
+
+            <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Czas trwania blokady (TempBan)</label>
+                <select id="admin-ban-duration-select" class="form-input" style="background:var(--bg-dark); color:var(--text-white);">
+                    <option value="1h">1 godzina</option>
+                    <option value="12h">12 godzin</option>
+                    <option value="1d">1 dzień (24h)</option>
+                    <option value="3d">3 dni</option>
+                    <option value="7d">7 dni (1 tydzień)</option>
+                    <option value="30d">30 dni (1 miesiąc)</option>
+                    <option value="perm" selected>Na zawsze (Permanentny Ban)</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="form-label">Powód blokady</label>
+                <input type="text" id="admin-ban-reason-input" class="form-input" placeholder="np. Publikacja treści 18+" value="Złamanie regulaminu SocialSphere">
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button onclick="closeAdminBanModal()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-gray); padding:10px; border-radius:20px; font-weight:600; cursor:pointer;">Anuluj</button>
+                <button onclick="confirmAdminBan()" style="background:#ff3333; color:#fff; border:none; padding:10px; border-radius:20px; font-weight:700; cursor:pointer;">Zablokuj użytkownika</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. ADMIN WARN MODAL -->
+    <div class="rules-modal-overlay" id="admin-warn-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10001; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
+        <div class="rules-modal-card" style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--border-radius-lg); padding:28px; width:90%; max-width:440px; box-shadow:0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(255,170,0,0.15);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; border-bottom:1px solid var(--border-color); padding-bottom:14px;">
+                <h3 style="font-size:16px; font-weight:800; color:#ffaa00; margin:0; display:flex; align-items:center; gap:8px;">
+                    ⚠️ Wyślij ostrzeżenie użytkownikowi
+                </h3>
+                <button onclick="closeAdminWarnModal()" style="background:transparent; border:none; color:var(--text-gray); font-size:18px; cursor:pointer;">✕</button>
+            </div>
+
+            <p style="font-size:13px; color:var(--text-gray); margin-bottom:16px;" id="admin-warn-target-user-info">Wysyłasz ostrzeżenie do: ...</p>
+
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="form-label">Treść / Powód ostrzeżenia</label>
+                <textarea id="admin-warn-reason-input" class="form-input" style="min-height:80px; resize:vertical; background:var(--bg-dark); color:var(--text-white);" placeholder="Wpisz treść ostrzeżenia, które wyświetli się użytkownikowi na ekranie..."></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button onclick="closeAdminWarnModal()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-gray); padding:10px; border-radius:20px; font-weight:600; cursor:pointer;">Anuluj</button>
+                <button onclick="confirmAdminWarn()" style="background:#ffaa00; color:#000; border:none; padding:10px; border-radius:20px; font-weight:800; cursor:pointer;">Wyślij ostrzeżenie</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
