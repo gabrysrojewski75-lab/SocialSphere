@@ -53,7 +53,9 @@ os.makedirs(www_dir, exist_ok=True)
 shutil.copy(os.path.join(project_dir, "index.html"), os.path.join(www_dir, "index.html"))
 shutil.copy(os.path.join(project_dir, "app.js"), os.path.join(www_dir, "app.js"))
 shutil.copy(os.path.join(project_dir, "style.css"), os.path.join(www_dir, "style.css"))
-shutil.copy(os.path.join(project_dir, "weryfikacja.html"), os.path.join(www_dir, "weryfikacja.html"))
+wer_path = os.path.join(project_dir, "weryfikacja.html")
+if os.path.exists(wer_path):
+    shutil.copy(wer_path, os.path.join(www_dir, "weryfikacja.html"))
 
 assets_dir = os.path.join(project_dir, "assets")
 if os.path.exists(assets_dir):

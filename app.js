@@ -287,10 +287,29 @@ function loadState() {
 let isCentralServerConnected = false;
 
 function getServerApiBaseUrl() {
-    if (window.location.protocol === 'file:') {
-        return 'http://localhost:3000';
+    const customUrl = localStorage.getItem('socialsphere_custom_server_url');
+    if (customUrl) return customUrl.replace(/\/$/, '');
+
+    // If running in mobile APK (file: or localhost in Cordova)
+    if (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && (window.location.port === '' || window.location.port === '80' || window.location.port === '443'))) {
+        return 'https://socialsphere.onrender.com';
     }
     return '';
+}
+
+function promptSetCustomServerUrl() {
+    const current = getServerApiBaseUrl() || 'https://socialsphere.onrender.com';
+    const input = prompt('Wpisz adres serwera SocialSphere (np. https://socialsphere.onrender.com lub http://192.168.1.104:3000):', current);
+    if (input !== null) {
+        const trimmed = input.trim().replace(/\/$/, '');
+        if (trimmed) {
+            localStorage.setItem('socialsphere_custom_server_url', trimmed);
+        } else {
+            localStorage.removeItem('socialsphere_custom_server_url');
+        }
+        alert('Zapisano nowy adres serwera! Następuje synchronizacja...');
+        syncWithCentralServer();
+    }
 }
 
 function syncWithCentralServer() {
