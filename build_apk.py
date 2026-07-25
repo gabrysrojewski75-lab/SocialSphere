@@ -72,6 +72,22 @@ shutil.copy(os.path.join(icons_dir, "icon-96.png"), os.path.join(icon_dir_androi
 shutil.copy(os.path.join(icons_dir, "icon-144.png"), os.path.join(icon_dir_android, "xxhdpi.png"))
 shutil.copy(os.path.join(icons_dir, "icon-192.png"), os.path.join(icon_dir_android, "xxxhdpi.png"))
 
+# Patch config.xml for Android app icon
+config_xml_path = os.path.join(cordova_proj, "config.xml")
+if os.path.exists(config_xml_path):
+    tree = ET.parse(config_xml_path)
+    root = tree.getroot()
+    icon_elem = ET.Element("icon", {"src": "res/icon/android/xxxhdpi.png"})
+    root.append(icon_elem)
+    platform = root.find("platform[@name='android']")
+    if platform is None:
+        platform = ET.Element("platform", {"name": "android"})
+        root.append(platform)
+    for density, fname in [("ldpi", "ldpi.png"), ("mdpi", "mdpi.png"), ("hdpi", "hdpi.png"), ("xhdpi", "xhdpi.png"), ("xxhdpi", "xxhdpi.png"), ("xxxhdpi", "xxxhdpi.png")]:
+        p_icon = ET.Element("icon", {"density": density, "src": f"res/icon/android/{fname}"})
+        platform.append(p_icon)
+    tree.write(config_xml_path, encoding="utf-8", xml_declaration=True)
+
 # 3. Keystore certificate
 keystore_path = os.path.join(project_dir, "socialsphere.keystore")
 if not os.path.exists(keystore_path):
