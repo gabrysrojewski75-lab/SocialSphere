@@ -286,15 +286,27 @@ function loadState() {
 // --- CENTRAL NETWORK SERVER SYNC ---
 let isCentralServerConnected = false;
 
+// =====================================================================
+// CENTRALNY SERWER RENDER.COM — używany przez APK, EXE i przeglądarkę
+// Wszystkie platformy muszą synchronizować dane przez jeden serwer!
+// =====================================================================
+const CENTRAL_SERVER_URL = 'https://socialsphere.onrender.com';
+
 function getServerApiBaseUrl() {
+    // 1. Priorytet: adres ustawiony ręcznie przez użytkownika
     const customUrl = localStorage.getItem('socialsphere_custom_server_url');
     if (customUrl) return customUrl.replace(/\/$/, '');
 
-    // If running in mobile APK (file: or localhost in Cordova)
-    if (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && (window.location.port === '' || window.location.port === '80' || window.location.port === '443'))) {
-        return 'https://socialsphere.onrender.com';
+    // 2. Jeśli strona działa na samym Render.com — używaj ścieżek względnych
+    //    (np. https://socialsphere.onrender.com/ → '' bo /api/db działa lokalnie)
+    if (window.location.hostname.includes('onrender.com') ||
+        window.location.hostname.includes('socialsphere')) {
+        return '';
     }
-    return '';
+
+    // 3. EXE (localhost z portem), APK (file:), dowolny inny host →
+    //    zawsze synchronizuj z centralnym serwerem Render.com
+    return CENTRAL_SERVER_URL;
 }
 
 function promptSetCustomServerUrl() {
