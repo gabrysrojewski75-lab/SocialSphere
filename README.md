@@ -43,9 +43,10 @@ Aby uruchomić darmowy serwer dostępny dla każdego w internecie z szyfrowaniem
 1. Wrzuć to repozytorium na własny **GitHub**.
 2. Wejdź na [Render.com](https://render.com) i kliknij **New + -> Web Service**.
 3. Połącz konto GitHub i wybierz repozytorium `SocialSphere`.
-4. Ustawienia:
+4. Ustawienia na Render.com:
+   * **Build Command:** `npm install --omit=dev`
    * **Start Command:** `node server.js`
-   * **Instance Type:** `Free`
+   * **Instance Type:** `Free` (Darmowy)
 5. Otrzymasz gotowy darmowy link HTTPS (np. `https://socialsphere.onrender.com`).
 
 ---
