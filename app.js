@@ -2595,7 +2595,7 @@ function renderSuggestedUsers() {
     if (!container) return;
     container.innerHTML = '';
 
-    const otherUsers = users.filter(u => u.email.toLowerCase() !== currentUser.email.toLowerCase() && !u.isOwner && u.email !== 'admin@socialsphere.com');
+    const otherUsers = users.filter(u => u.email.toLowerCase() !== currentUser.email.toLowerCase());
 
     if (otherUsers.length === 0) {
         container.innerHTML = `
@@ -2637,6 +2637,20 @@ function renderSuggestedUsers() {
 
 let orbitLikes = {};
 let currentOrbitTheme = 'sparks';
+let currentOrbitCustomImage = null;
+
+function handleOrbitFileSelect(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        currentOrbitCustomImage = evt.target.result;
+        const btnText = document.getElementById('orbit-file-btn-text');
+        if (btnText) btnText.innerText = '✅ Wybrano: ' + file.name;
+        previewOrbit();
+    };
+    reader.readAsDataURL(file);
+}
 
 function renderOrbits() {
     const feed = document.getElementById('orbits-feed');
@@ -2645,13 +2659,14 @@ function renderOrbits() {
 
     // Merge official orbits + user-posted orbits from posts array
     const userOrbits = posts
-        .filter(p => p.orbitTheme)
+        .filter(p => p.orbitTheme || p.isOrbit)
         .map(p => ({
             id: 'orbit-post-' + p.id,
             author: p.author ? (p.author.handle || '').replace(/^@/, '') || p.author.name : 'Użytkownik',
             avatar: p.author ? p.author.avatar : '',
             desc: p.orbitDesc || p.content || '',
-            theme: p.orbitTheme,
+            theme: p.orbitTheme || 'sparks',
+            customImage: p.orbitImage || p.image || null,
             likes: p.likes || 0,
             official: false,
             postId: p.id
@@ -2674,11 +2689,16 @@ function renderOrbits() {
             ? `<button class="orbit-action-btn" onclick="deleteUserOrbit('${orbit.postId}')" style="color:#ff4444;margin-left:auto;">🗑️ Usuń</button>`
             : '';
 
+        const customImgHtml = orbit.customImage
+            ? `<img src="${orbit.customImage}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;z-index:1;">`
+            : '';
+
         card.innerHTML = `
             <div class="orbit-canvas-wrapper" id="wrap-${orbit.id}">
-                <canvas id="orbit-canvas-${orbit.id}" width="300" height="280"></canvas>
+                ${customImgHtml}
+                <canvas id="orbit-canvas-${orbit.id}" width="300" height="280" style="${orbit.customImage ? 'display:none;' : ''}"></canvas>
             </div>
-            <div class="orbit-overlay">
+            <div class="orbit-overlay" style="z-index:2;">
                 <div class="orbit-author">
                     <img src="${orbit.avatar}" alt="${orbit.author}" class="orbit-author-avatar" onerror="this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'">
                     <span class="orbit-author-name">${orbit.author}${orbit.official ? ' <span class="official-badge" style="font-size:9px;">Oficjalny</span>' : ''}</span>
@@ -2696,13 +2716,15 @@ function renderOrbits() {
 
         feed.appendChild(card);
 
-        // Draw canvas after DOM insert — fix: use the canvas inside the card, not a duplicate
-        setTimeout(() => {
-            const c = document.getElementById(`orbit-canvas-${orbit.id}`);
-            if (!c) return;
-            const ctx = c.getContext('2d');
-            drawStoryCanvas(ctx, c, { theme: orbit.theme, caption: '' });
-        }, 50 * (idx + 1));
+        // Draw canvas if no custom image
+        if (!orbit.customImage) {
+            setTimeout(() => {
+                const c = document.getElementById(`orbit-canvas-${orbit.id}`);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                drawStoryCanvas(ctx, c, { theme: orbit.theme, caption: '' });
+            }, 50 * (idx + 1));
+        }
     });
 }
 
@@ -2732,11 +2754,16 @@ function deleteUserOrbit(postId) {
 // --- ADD ORBIT MODAL ---
 function openAddOrbitModal() {
     currentOrbitTheme = 'sparks';
+    currentOrbitCustomImage = null;
     const overlay = document.getElementById('add-orbit-modal-overlay');
     if (overlay) { overlay.style.display = 'flex'; }
     const descInput = document.getElementById('orbit-desc-input');
     if (descInput) descInput.value = '';
-    // Reset theme picker active state
+    const fileInput = document.getElementById('orbit-file-input');
+    if (fileInput) fileInput.value = '';
+    const btnText = document.getElementById('orbit-file-btn-text');
+    if (btnText) btnText.innerText = 'Dodaj zdjęcie z urządzenia';
+
     document.querySelectorAll('.orbit-theme-btn').forEach(b => b.classList.remove('active'));
     const firstBtn = document.querySelector('.orbit-theme-btn[data-theme="sparks"]');
     if (firstBtn) firstBtn.classList.add('active');
@@ -2745,6 +2772,7 @@ function openAddOrbitModal() {
 }
 
 function closeAddOrbitModal() {
+    currentOrbitCustomImage = null;
     const overlay = document.getElementById('add-orbit-modal-overlay');
     if (overlay) overlay.style.display = 'none';
 }
@@ -2760,7 +2788,17 @@ function previewOrbit() {
     const c = document.getElementById('orbit-preview-canvas');
     if (!c) return;
     const ctx = c.getContext('2d');
-    drawStoryCanvas(ctx, c, { theme: currentOrbitTheme, caption: '' });
+    
+    if (currentOrbitCustomImage) {
+        ctx.clearRect(0, 0, c.width, c.height);
+        const img = new Image();
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0, c.width, c.height);
+        };
+        img.src = currentOrbitCustomImage;
+    } else {
+        drawStoryCanvas(ctx, c, { theme: currentOrbitTheme, caption: '' });
+    }
 }
 
 function confirmAddOrbit() {
@@ -2769,8 +2807,8 @@ function confirmAddOrbit() {
         return;
     }
     const desc = (document.getElementById('orbit-desc-input')?.value || '').trim();
-    if (!desc) {
-        alert('Wpisz opis Orbity!');
+    if (!desc && !currentOrbitCustomImage) {
+        alert('Wpisz opis lub dodaj zdjęcie do Orbity!');
         return;
     }
 
@@ -2782,10 +2820,11 @@ function confirmAddOrbit() {
             avatar: currentUser.avatar
         },
         time: 'Przed chwilą',
-        content: desc,
-        orbitDesc: desc,
+        content: desc || 'Nowa Orbita',
+        orbitDesc: desc || '',
         orbitTheme: currentOrbitTheme,
-        image: null,
+        orbitImage: currentOrbitCustomImage,
+        image: currentOrbitCustomImage,
         likes: 0,
         likedByUser: false,
         comments: [],

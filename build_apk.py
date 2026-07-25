@@ -75,18 +75,22 @@ shutil.copy(os.path.join(icons_dir, "icon-192.png"), os.path.join(icon_dir_andro
 # Patch config.xml for Android app icon
 config_xml_path = os.path.join(cordova_proj, "config.xml")
 if os.path.exists(config_xml_path):
-    tree = ET.parse(config_xml_path)
-    root = tree.getroot()
-    icon_elem = ET.Element("icon", {"src": "res/icon/android/xxxhdpi.png"})
-    root.append(icon_elem)
-    platform = root.find("platform[@name='android']")
-    if platform is None:
-        platform = ET.Element("platform", {"name": "android"})
-        root.append(platform)
-    for density, fname in [("ldpi", "ldpi.png"), ("mdpi", "mdpi.png"), ("hdpi", "hdpi.png"), ("xhdpi", "xhdpi.png"), ("xxhdpi", "xxhdpi.png"), ("xxxhdpi", "xxxhdpi.png")]:
-        p_icon = ET.Element("icon", {"density": density, "src": f"res/icon/android/{fname}"})
-        platform.append(p_icon)
-    tree.write(config_xml_path, encoding="utf-8", xml_declaration=True)
+    with open(config_xml_path, "r", encoding="utf-8") as f:
+        xml_content = f.read()
+    icon_tags = """
+    <icon src="res/icon/android/xxxhdpi.png" />
+    <platform name="android">
+        <icon density="ldpi" src="res/icon/android/ldpi.png" />
+        <icon density="mdpi" src="res/icon/android/mdpi.png" />
+        <icon density="hdpi" src="res/icon/android/hdpi.png" />
+        <icon density="xhdpi" src="res/icon/android/xhdpi.png" />
+        <icon density="xxhdpi" src="res/icon/android/xxhdpi.png" />
+        <icon density="xxxhdpi" src="res/icon/android/xxxhdpi.png" />
+    </platform>
+</widget>"""
+    xml_content = xml_content.replace("</widget>", icon_tags)
+    with open(config_xml_path, "w", encoding="utf-8") as f:
+        f.write(xml_content)
 
 # 3. Keystore certificate
 keystore_path = os.path.join(project_dir, "socialsphere.keystore")

@@ -425,6 +425,15 @@
                             <button class="orbit-theme-btn" data-theme="own_pulse" onclick="selectOrbitTheme('own_pulse', this)">🟠 Puls</button>
                         </div>
 
+                        <!-- Custom Image upload -->
+                        <div style="margin-bottom:14px;">
+                            <label style="font-size:13px;color:var(--text-muted);display:block;margin-bottom:6px;">Własne zdjęcie z urządzenia (opcjonalnie)</label>
+                            <input type="file" id="orbit-file-input" accept="image/*" onchange="handleOrbitFileSelect(event)" style="display:none;">
+                            <button class="secondary-btn" type="button" onclick="document.getElementById('orbit-file-input').click()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px;font-size:13px;box-sizing:border-box;">
+                                📷 <span id="orbit-file-btn-text">Dodaj zdjęcie z urządzenia</span>
+                            </button>
+                        </div>
+
                         <!-- Description -->
                         <label style="font-size:13px;color:var(--text-muted);display:block;margin-bottom:6px;">Opis Orbity (max 80 znaków)</label>
                         <input type="text" id="orbit-desc-input" maxlength="80" placeholder="Napisz coś o swojej Orbicie..." oninput="previewOrbit()"

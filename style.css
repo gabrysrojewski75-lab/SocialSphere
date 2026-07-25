@@ -2095,10 +2095,81 @@ input:checked + .slider:before {
         min-height: 100vh;
     }
     
-    .sidebar {
-        display: none;
+    .sidebar,
+    .right-widgets,
+    .trending-widget {
+        display: none !important;
     }
     
+    .main-wrapper {
+        height: calc(100vh - 60px);
+        padding: 8px;
+        overflow-x: hidden;
+    }
+
+    /* Top Search Bar & Header */
+    .top-header {
+        padding: 8px 12px;
+    }
+    .header-search {
+        max-width: 140px;
+    }
+
+    /* Modal responsiveness */
+    #add-orbit-modal-overlay > div {
+        width: 94vw !important;
+        max-height: 85vh !important;
+        overflow-y: auto !important;
+        padding: 18px !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Profile responsiveness */
+    .profile-container {
+        width: 100% !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+    .profile-header-card {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        padding: 16px !important;
+    }
+    .profile-info {
+        width: 100% !important;
+    }
+    .profile-stats {
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+    }
+    .profile-action-btns {
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+        width: 100% !important;
+    }
+
+    /* Messages & Chats responsiveness */
+    .chat-list-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 10px !important;
+    }
+    .chat-channel-item, .chat-item {
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .chat-channel-info, .chat-item-text {
+        min-width: 0 !important;
+        flex: 1 !important;
+        overflow: hidden !important;
+    }
+
     .mobile-nav {
         display: flex;
         background-color: var(--bg-sidebar);
@@ -2129,10 +2200,6 @@ input:checked + .slider:before {
     .mobile-nav-item.active {
         color: var(--orange-primary);
         background-color: rgba(255, 102, 0, 0.05);
-    }
-    
-    .main-wrapper {
-        height: calc(100vh - 60px);
     }
     
     .chat-tab-container {
