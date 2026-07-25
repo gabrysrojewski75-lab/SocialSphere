@@ -133,15 +133,81 @@ const server = http.createServer((req, res) => {
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', () => {
             try {
-                const parsed = JSON.parse(body);
-                fs.writeFile(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8', err => {
-                    if (err) {
-                        res.writeHead(500, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ error: 'Błąd zapisu' }));
-                        return;
+                const incoming = JSON.parse(body);
+                ensureDbExists();
+
+                fs.readFile(DB_FILE, 'utf-8', (err, currentData) => {
+                    let db = INITIAL_DB;
+                    try {
+                        if (!err && currentData) db = JSON.parse(currentData);
+                    } catch (e) {}
+
+                    if (!Array.isArray(db.users)) db.users = [];
+                    if (!Array.isArray(db.posts)) db.posts = [];
+                    if (!Array.isArray(db.chats)) db.chats = [];
+                    if (!Array.isArray(db.notifications)) db.notifications = [];
+
+                    // Merge users by email
+                    if (Array.isArray(incoming.users)) {
+                        incoming.users.forEach(incUser => {
+                            if (!incUser.email) return;
+                            const existingIdx = db.users.findIndex(u => u.email.toLowerCase() === incUser.email.toLowerCase());
+                            if (existingIdx >= 0) {
+                                db.users[existingIdx] = { ...db.users[existingIdx], ...incUser };
+                            } else {
+                                db.users.push(incUser);
+                            }
+                        });
                     }
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ status: 'ok', clientIp }));
+
+                    // Merge posts by ID
+                    if (Array.isArray(incoming.posts)) {
+                        incoming.posts.forEach(incPost => {
+                            if (!incPost.id) return;
+                            const existingIdx = db.posts.findIndex(p => p.id === incPost.id);
+                            if (existingIdx >= 0) {
+                                db.posts[existingIdx] = { ...db.posts[existingIdx], ...incPost };
+                            } else {
+                                db.posts.unshift(incPost);
+                            }
+                        });
+                    }
+
+                    // Merge chats by ID
+                    if (Array.isArray(incoming.chats)) {
+                        incoming.chats.forEach(incChat => {
+                            if (!incChat.id) return;
+                            const existingIdx = db.chats.findIndex(c => c.id === incChat.id);
+                            if (existingIdx >= 0) {
+                                db.chats[existingIdx] = { ...db.chats[existingIdx], ...incChat };
+                            } else {
+                                db.chats.push(incChat);
+                            }
+                        });
+                    }
+
+                    // Merge notifications by ID
+                    if (Array.isArray(incoming.notifications)) {
+                        incoming.notifications.forEach(incNotif => {
+                            if (!incNotif.id) return;
+                            const existingIdx = db.notifications.findIndex(n => n.id === incNotif.id);
+                            if (existingIdx >= 0) {
+                                db.notifications[existingIdx] = { ...db.notifications[existingIdx], ...incNotif };
+                            } else {
+                                db.notifications.unshift(incNotif);
+                            }
+                        });
+                    }
+
+                    fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), 'utf-8', err => {
+                        if (err) {
+                            res.writeHead(500, { 'Content-Type': 'application/json' });
+                            res.end(JSON.stringify({ error: 'Błąd zapisu' }));
+                            return;
+                        }
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ status: 'ok', clientIp, db }));
+                    });
                 });
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });

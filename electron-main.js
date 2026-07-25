@@ -115,11 +115,49 @@ function startEmbeddedServer(portToUse) {
             req.on('data', chunk => { body += chunk.toString(); });
             req.on('end', () => {
                 try {
-                    const parsed = JSON.parse(body);
-                    fs.writeFile(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8', err => {
-                        if (err) { res.writeHead(500); res.end('{}'); return; }
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ status: 'ok', clientIp }));
+                    const incoming = JSON.parse(body);
+                    ensureDbExists();
+
+                    fs.readFile(DB_FILE, 'utf-8', (err, currentData) => {
+                        let db = INITIAL_DB;
+                        try {
+                            if (!err && currentData) db = JSON.parse(currentData);
+                        } catch (e) {}
+
+                        if (!Array.isArray(db.users)) db.users = [];
+                        if (!Array.isArray(db.posts)) db.posts = [];
+                        if (!Array.isArray(db.chats)) db.chats = [];
+                        if (!Array.isArray(db.notifications)) db.notifications = [];
+
+                        if (Array.isArray(incoming.users)) {
+                            incoming.users.forEach(incUser => {
+                                if (!incUser.email) return;
+                                const existingIdx = db.users.findIndex(u => u.email.toLowerCase() === incUser.email.toLowerCase());
+                                if (existingIdx >= 0) {
+                                    db.users[existingIdx] = { ...db.users[existingIdx], ...incUser };
+                                } else {
+                                    db.users.push(incUser);
+                                }
+                            });
+                        }
+
+                        if (Array.isArray(incoming.posts)) {
+                            incoming.posts.forEach(incPost => {
+                                if (!incPost.id) return;
+                                const existingIdx = db.posts.findIndex(p => p.id === incPost.id);
+                                if (existingIdx >= 0) {
+                                    db.posts[existingIdx] = { ...db.posts[existingIdx], ...incPost };
+                                } else {
+                                    db.posts.unshift(incPost);
+                                }
+                            });
+                        }
+
+                        fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), 'utf-8', err => {
+                            if (err) { res.writeHead(500); res.end('{}'); return; }
+                            res.writeHead(200, { 'Content-Type': 'application/json' });
+                            res.end(JSON.stringify({ status: 'ok', clientIp, db }));
+                        });
                     });
                 } catch (e) { res.writeHead(400); res.end('{}'); }
             });
