@@ -7,6 +7,7 @@
   "license": "ISC",
   "scripts": {
     "start": "node server.js",
+    "build": "echo 'No build required for SocialSphere'",
     "electron": "electron .",
     "build-exe": "electron-builder --win --x64",
     "build-all": "electron-builder --win --x64"
