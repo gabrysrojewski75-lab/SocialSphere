@@ -143,15 +143,23 @@ const server = http.createServer((req, res) => {
                     } catch (e) {}
 
                     if (!Array.isArray(db.users)) db.users = [];
+                    if (!Array.isArray(db.deletedEmails)) db.deletedEmails = ["walekonia123@gmail.com"];
                     if (!Array.isArray(db.posts)) db.posts = [];
                     if (!Array.isArray(db.chats)) db.chats = [];
                     if (!Array.isArray(db.notifications)) db.notifications = [];
 
-                    // Merge users by email
+                    // Filter out any blacklisted deleted users first
+                    const deletedSet = new Set(db.deletedEmails.map(e => e.toLowerCase()));
+                    db.users = db.users.filter(u => u.email && !deletedSet.has(u.email.toLowerCase()));
+
+                    // Merge users by email (ignoring deleted emails)
                     if (Array.isArray(incoming.users)) {
                         incoming.users.forEach(incUser => {
                             if (!incUser.email) return;
-                            const existingIdx = db.users.findIndex(u => u.email.toLowerCase() === incUser.email.toLowerCase());
+                            const emailLower = incUser.email.toLowerCase();
+                            if (deletedSet.has(emailLower)) return;
+
+                            const existingIdx = db.users.findIndex(u => u.email.toLowerCase() === emailLower);
                             if (existingIdx >= 0) {
                                 db.users[existingIdx] = { ...db.users[existingIdx], ...incUser };
                             } else {
@@ -219,15 +227,19 @@ const server = http.createServer((req, res) => {
 
     // --- DELETE USER (Owner only, called from admin panel) ---
     if (pathname.startsWith('/api/user/delete/') && req.method === 'POST') {
-        const emailToDelete = decodeURIComponent(pathname.replace('/api/user/delete/', ''));
+        const emailToDelete = decodeURIComponent(pathname.replace('/api/user/delete/', '')).toLowerCase();
         ensureDbExists();
         fs.readFile(DB_FILE, 'utf-8', (err, currentData) => {
             let db = INITIAL_DB;
             try { if (!err && currentData) db = JSON.parse(currentData); } catch(e) {}
-            db.users = (db.users || []).filter(u => u.email.toLowerCase() !== emailToDelete.toLowerCase());
+            if (!Array.isArray(db.deletedEmails)) db.deletedEmails = [];
+            if (!db.deletedEmails.includes(emailToDelete)) {
+                db.deletedEmails.push(emailToDelete);
+            }
+            db.users = (db.users || []).filter(u => u.email.toLowerCase() !== emailToDelete);
             fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), 'utf-8', err2 => {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ status: 'deleted', email: emailToDelete }));
+                res.end(JSON.stringify({ status: 'deleted', email: emailToDelete, db }));
             });
         });
         return;

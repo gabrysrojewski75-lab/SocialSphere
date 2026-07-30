@@ -347,12 +347,17 @@ function syncWithCentralServer() {
         if (serverDb && Array.isArray(serverDb.users) && serverDb.users.length > 0) {
             isCentralServerConnected = true;
 
+            // usuń z lokalnego stanu usunięte konta z czarnej listy serwera
+            if (Array.isArray(serverDb.deletedEmails)) {
+                const delSet = new Set(serverDb.deletedEmails.map(e => e.toLowerCase()));
+                users = users.filter(u => u.email && !delSet.has(u.email.toLowerCase()));
+            }
+
             // Scala użytkowników: dodaj z serwera tych których nie mamy lokalnie
             serverDb.users.forEach(su => {
                 if (!su.email) return;
                 const localIdx = users.findIndex(u => u.email.toLowerCase() === su.email.toLowerCase());
                 if (localIdx >= 0) {
-                    // Zaktualizuj dane istniejącego użytkownika (np. weryfikacja, ban)
                     users[localIdx] = { ...users[localIdx], ...su };
                 } else {
                     if (!Array.isArray(su.following)) su.following = [];
