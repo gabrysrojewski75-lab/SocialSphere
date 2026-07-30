@@ -326,61 +326,98 @@ function promptSetCustomServerUrl() {
 
 function syncWithCentralServer() {
     const baseUrl = getServerApiBaseUrl();
-    fetch(baseUrl + '/api/db')
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.users) {
-                isCentralServerConnected = true;
-                
-                // Merge users from server while preserving currentUser session
-                users = data.users;
-                if (data.posts) posts = data.posts;
-                if (data.chats) chats = data.chats;
-                if (data.notifications) notifications = data.notifications;
-                
-                // Ensure arrays on users
-                users.forEach(u => {
-                    if (!Array.isArray(u.following)) u.following = [];
-                    if (!Array.isArray(u.followers)) u.followers = [];
-                });
 
-                // Sync current user if logged in
-                if (currentUser && currentUser.email) {
-                    const matchedUser = users.find(u => u.email.toLowerCase() === currentUser.email.toLowerCase());
-                    if (matchedUser) {
-                        currentUser.verified = matchedUser.verified || false;
-                        currentUser.isOwner = matchedUser.isOwner || false;
-                        currentUser.banned = matchedUser.banned || false;
-                        currentUser.followers = matchedUser.followers || [];
-                        currentUser.following = matchedUser.following || [];
+    // KROK 1: Najpierw wyślij lokalne dane do serwera (żeby zarejestrować nasze konto globalnie)
+    const localSnapshot = {
+        users: users.filter(u => u.email && u.email.trim() !== ''),
+        posts: posts.filter(p => p.id),
+        chats: chats.filter(c => c.id),
+        notifications: notifications.filter(n => n.id)
+    };
+
+    fetch(baseUrl + '/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(localSnapshot)
+    })
+    .then(res => res.json())
+    .then(result => {
+        // KROK 2: Pobierz aktualną, scaloną bazę z serwera i zaktualizuj lokalnie
+        const serverDb = result && result.db ? result.db : null;
+        if (serverDb && Array.isArray(serverDb.users) && serverDb.users.length > 0) {
+            isCentralServerConnected = true;
+
+            // Scala użytkowników: dodaj z serwera tych których nie mamy lokalnie
+            serverDb.users.forEach(su => {
+                if (!su.email) return;
+                const localIdx = users.findIndex(u => u.email.toLowerCase() === su.email.toLowerCase());
+                if (localIdx >= 0) {
+                    // Zaktualizuj dane istniejącego użytkownika (np. weryfikacja, ban)
+                    users[localIdx] = { ...users[localIdx], ...su };
+                } else {
+                    if (!Array.isArray(su.following)) su.following = [];
+                    if (!Array.isArray(su.followers)) su.followers = [];
+                    users.push(su);
+                }
+            });
+
+            // Scala posty: dodaj z serwera te których nie mamy lokalnie
+            if (Array.isArray(serverDb.posts)) {
+                serverDb.posts.forEach(sp => {
+                    if (!sp.id) return;
+                    if (!posts.find(p => p.id === sp.id)) {
+                        posts.push(sp);
                     }
-                }
-                
-                saveStateLocal();
-                
-                // Refresh UI components
-                if (currentTab === 'feed') renderFeed();
-                if (currentTab === 'admin') renderAdminPanel();
-                renderSuggestedUsers();
+                });
             }
-        })
-        .catch(err => {
-            isCentralServerConnected = false;
-        });
 
-    // Fetch real client IP info
-    fetch(baseUrl + '/api/info')
-        .then(res => res.json())
-        .then(info => {
-            if (info && info.clientIp && currentUser && currentUser.email) {
-                const userInDb = users.find(u => u.email === currentUser.email);
-                if (userInDb && userInDb.lastIp !== info.clientIp) {
-                    userInDb.lastIp = info.clientIp;
-                    saveState();
+            // Scala powiadomienia
+            if (Array.isArray(serverDb.notifications)) {
+                serverDb.notifications.forEach(sn => {
+                    if (!sn.id) return;
+                    if (!notifications.find(n => n.id === sn.id)) {
+                        notifications.unshift(sn);
+                    }
+                });
+            }
+
+            // Zaktualizuj sesję zalogowanego użytkownika
+            if (currentUser && currentUser.email) {
+                const matchedUser = users.find(u => u.email.toLowerCase() === currentUser.email.toLowerCase());
+                if (matchedUser) {
+                    currentUser.verified = matchedUser.verified || false;
+                    currentUser.isOwner = matchedUser.isOwner || false;
+                    currentUser.banned = matchedUser.banned || false;
+                    currentUser.followers = matchedUser.followers || [];
+                    currentUser.following = matchedUser.following || [];
                 }
             }
-        })
-        .catch(() => {});
+
+            saveStateLocal();
+
+            // Odśwież UI
+            if (currentTab === 'feed') renderFeed();
+            if (currentTab === 'admin') renderAdminPanel();
+            renderSuggestedUsers();
+        }
+    })
+    .catch(() => {
+        isCentralServerConnected = false;
+        // Fallback: spróbuj tylko GET jeśli POST nie działa
+        fetch(baseUrl + '/api/db')
+            .then(res => res.json())
+            .then(data => {
+                if (data && Array.isArray(data.users)) {
+                    data.users.forEach(su => {
+                        if (!su.email) return;
+                        const localIdx = users.findIndex(u => u.email.toLowerCase() === su.email.toLowerCase());
+                        if (localIdx < 0) users.push(su);
+                    });
+                    saveStateLocal();
+                    renderSuggestedUsers();
+                }
+            }).catch(() => {});
+    });
 }
 
 function saveStateLocal() {
@@ -3355,12 +3392,17 @@ function acknowledgeUserWarning() {
 }
 
 function adminDeleteUser(email) {
-    const user = users.find(u => u.email === email);
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!user) return;
 
-    if (confirm(`Czy na pewno chcesz usunąć konto "${user.name}" (${user.email})?`)) {
-        users = users.filter(u => u.email !== email);
+    if (confirm(`Czy na pewno chcesz trwale usunąć konto "${user.name}" (${user.email}) ze wszystkich urządzeń?`)) {
+        users = users.filter(u => u.email.toLowerCase() !== email.toLowerCase());
         saveState();
+
+        const baseUrl = getServerApiBaseUrl();
+        fetch(baseUrl + '/api/user/delete/' + encodeURIComponent(email), { method: 'POST' })
+            .catch(() => {});
+
         renderSuggestedUsers();
         renderAdminPanel();
     }

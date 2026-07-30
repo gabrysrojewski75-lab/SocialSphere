@@ -217,6 +217,22 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // --- DELETE USER (Owner only, called from admin panel) ---
+    if (pathname.startsWith('/api/user/delete/') && req.method === 'POST') {
+        const emailToDelete = decodeURIComponent(pathname.replace('/api/user/delete/', ''));
+        ensureDbExists();
+        fs.readFile(DB_FILE, 'utf-8', (err, currentData) => {
+            let db = INITIAL_DB;
+            try { if (!err && currentData) db = JSON.parse(currentData); } catch(e) {}
+            db.users = (db.users || []).filter(u => u.email.toLowerCase() !== emailToDelete.toLowerCase());
+            fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), 'utf-8', err2 => {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ status: 'deleted', email: emailToDelete }));
+            });
+        });
+        return;
+    }
+
     // --- STATIC FILES SERVING ---
     let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
     
