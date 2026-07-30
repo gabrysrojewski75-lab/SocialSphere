@@ -78,6 +78,9 @@ if os.path.exists(config_xml_path):
     with open(config_xml_path, "r", encoding="utf-8") as f:
         xml_content = f.read()
     icon_tags = """
+    <access origin="*" />
+    <allow-navigation href="*" />
+    <allow-intent href="*" />
     <icon src="res/icon/android/xxxhdpi.png" />
     <platform name="android">
         <icon density="ldpi" src="res/icon/android/ldpi.png" />
